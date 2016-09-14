@@ -43,4 +43,23 @@ public class MyTest {
 		scheduler.scheduleJob(jobDetail, triggerBuilder.build());
 		SchedulerEngine.start();
 	}
+	
+
+	public static void testjobKey() throws SchedulerException {
+		JobDataMap jobDataMap = new JobDataMap();
+		jobDataMap.put("hello", "zoufeng");
+		jobDataMap.put("name", "邹枫");
+		JobDetail jobDetail = JobBuilder.newJob(MyJobDetail.class).setJobData(jobDataMap).withIdentity("firtJob", "firtJobGroup").build();
+		ScheduleBuilder<DailyTimeIntervalTrigger> schedBuilder = DailyTimeIntervalScheduleBuilder.dailyTimeIntervalSchedule()
+													.startingDailyAt(TimeOfDay.hourAndMinuteAndSecondFromDate(new Date(),TimeZone.getDefault()))
+													.endingDailyAfterCount(100)
+													.withIntervalInSeconds(5);
+		TriggerBuilder<? extends Trigger> triggerBuilder = TriggerBuilder.newTrigger().forJob(jobDetail)
+															.withIdentity("firtTrigger", "firtGriggerGroup")
+															.withSchedule(schedBuilder);
+		
+		Scheduler scheduler = SchedulerEngine.getInstance();
+		scheduler.scheduleJob(jobDetail, triggerBuilder.build());
+		SchedulerEngine.start();
+	}
 }
