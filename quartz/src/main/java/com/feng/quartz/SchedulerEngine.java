@@ -1,9 +1,13 @@
 package com.feng.quartz;
 
 import org.apache.log4j.Logger;
+import org.quartz.JobDetail;
+import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
+import org.quartz.Trigger;
+import org.quartz.TriggerKey;
 import org.quartz.impl.StdSchedulerFactory;
 
 import com.feng.quartz.listener.MyJobListener;
@@ -12,22 +16,28 @@ import com.feng.quartz.listener.MyTriggerListener;
 
 public class SchedulerEngine {
 
-	private static Scheduler scheduler;
+	private Scheduler scheduler;
+	private static SchedulerEngine schedulerEngine;
 	private static Logger log = Logger.getLogger(SchedulerEngine.class);
 	
+	private SchedulerEngine(){};
+	private SchedulerEngine(Scheduler scheduler){
+		this.scheduler = scheduler;
+	};
 	
-	public static Scheduler getInstance() throws SchedulerException {
-		if(scheduler == null) {
+	public static SchedulerEngine getInstance() throws SchedulerException {
+		if(schedulerEngine == null) {
 			synchronized (SchedulerEngine.class) {
 				SchedulerFactory factory = new StdSchedulerFactory();
-				scheduler = factory.getScheduler();
-				scheduler.getListenerManager().addSchedulerListener(new MySchedulerListener());
-				scheduler.getListenerManager().addJobListener(new MyJobListener());
-				scheduler.getListenerManager().addTriggerListener(new MyTriggerListener());
+				Scheduler sch = factory.getScheduler();
+				sch.getListenerManager().addSchedulerListener(new MySchedulerListener());
+				sch.getListenerManager().addJobListener(new MyJobListener());
+				sch.getListenerManager().addTriggerListener(new MyTriggerListener());
+				schedulerEngine = new SchedulerEngine(sch);
 			}
 		}
 		
-		return scheduler;
+		return schedulerEngine;
 	}
 	
 	/**
@@ -36,7 +46,7 @@ public class SchedulerEngine {
 	 * @return
 	 * @throws SchedulerException
 	 */
-	public static boolean shutdown() throws SchedulerException {
+	public boolean shutdown() throws SchedulerException {
 		if (scheduler != null) {
 			synchronized (scheduler) {
 				if (!scheduler.isShutdown()) {
@@ -50,7 +60,21 @@ public class SchedulerEngine {
 		return true;
 	}
 	
-	public static void start() throws SchedulerException {
+	public void addJob(JobDetail jobDetail, Trigger trigger) throws SchedulerException {
+		JobKey jobKey = jobDetail.getKey();
+		TriggerKey triggerKey = trigger.getKey();
+		
+		//if exits, delete
+		if(scheduler.checkExists(jobKey)) {
+			scheduler.interrupt(jobKey);
+			scheduler.pauseTrigger(triggerKey);
+			scheduler.unscheduleJob(triggerKey);
+			scheduler.deleteJob(jobKey);
+		}
+		scheduler.scheduleJob(jobDetail, trigger);
+	}
+	
+	public void start() throws SchedulerException {
 		if(scheduler == null) {
 			synchronized (scheduler) {
 				getInstance();

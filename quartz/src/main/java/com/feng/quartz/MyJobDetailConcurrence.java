@@ -1,6 +1,7 @@
 package com.feng.quartz;
 
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 import org.quartz.DisallowConcurrentExecution;
@@ -22,6 +23,7 @@ public class MyJobDetailConcurrence implements InterruptableJob {
 	@Override
 	public void execute(JobExecutionContext context)
 			throws JobExecutionException {
+		System.out.println("start->      "+ System.currentTimeMillis()/1000);
 		excutorThread = Thread.currentThread();
 		JobDataMap jobDataMap =  context.getMergedJobDataMap();	
 		if(jobDataMap != null) {
@@ -29,7 +31,13 @@ public class MyJobDetailConcurrence implements InterruptableJob {
 				System.out.println(entry.getKey() + " value:  " + entry.getValue());
 			}
 		}
+		try {
+			TimeUnit.SECONDS.sleep(8L);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		log.debug("Hello excute------------------------------");
+		System.out.println("end->      "+ System.currentTimeMillis()/1000);
 	}
 
 	@Override
